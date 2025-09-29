@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-and-format:
+  format:
     runs-on: "ubuntu-22.04"
 
     permissions:
