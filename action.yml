@@ -1,79 +1,67 @@
 name: Format Markdown
+description: Automatically format changed markdown files in pull requests using Prettier.
 
-on:
-  pull_request:
-    paths:
-      - "**/*.md"
-  # Run on manual trigger
-  workflow_dispatch:
+inputs:
+  github_token:
+    description: "GitHub token for pushing changes"
+    required: true
 
-# Ensure only one run per branch at a time
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
-  cancel-in-progress: true
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        ref: ${{ github.head_ref }}
 
-jobs:
-  format:
-    runs-on: "ubuntu-22.04"
+    - name: Set up Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: "22"
 
-    permissions:
-      # Give the default GITHUB_TOKEN write permission to commit
-      # and push the changed files to the repository.
-      contents: write
-      pull-requests: write
+    - name: Get changed markdown files in the PR
+      id: changed-markdown-files
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        md_files=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.md$' | sed 's/.*/"&"/' | tr '\n' ' ' | sed 's/ $//' || true)
+        echo "files=${md_files}" >> $GITHUB_OUTPUT
 
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
+    - name: Format changed markdown files with Prettier
+      if: steps.changed-markdown-files.outputs.files != ''
+      run: npx prettier --write ${{ steps.changed-markdown-files.outputs.files }}
 
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "22"
-
-      - name: Get changed markdown files in the PR
-        id: changed-markdown-files
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          md_files=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.md$' | sed 's/.*/"&"/' | tr '\n' ' ' | sed 's/ $//' || true)
-          echo "files=${md_files}" >> $GITHUB_OUTPUT
-
-      - name: Format changed markdown files with Prettier
-        if: steps.changed-markdown-files.outputs.files != ''
-        run: npx prettier --write ${{ steps.changed-markdown-files.outputs.files }}
-
-      # Use the REST API to commit changes, so we get automatic commit signing
-      - name: Commit and push changes
-        if: steps.changed-markdown-files.outputs.files != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          # Github api only allows commits of one file at a time
-          BRANCH_NAME="${{ github.head_ref }}"
-          echo "Branch name: $BRANCH_NAME"
-          echo "Processing modified files..."
-          while IFS= read -r -d '' FILE; do
-            FILENAME=$(basename "$FILE")
-            echo "Processing file: $FILENAME"
-            CONTENT=$(base64 -i -w 0 "$FILE")
-            SHA=$(git rev-parse HEAD:"$FILE" 2>&1)
-            if [ $? -ne 0 ]; then
-              echo "Failed to get SHA for $FILE:"
-              echo "$SHA"
-              exit 1
-            fi
-            echo "SHA of file: $SHA"
-            API_RESPONSE=$(gh api --method PUT /repos/:owner/:repo/contents/"$FILE" \
-              --field message="chore(markdown): auto-fix markdown lint issues for $FILENAME" \
-              --field content="$CONTENT" \
-              --field branch="$BRANCH_NAME" \
-              --field sha="$SHA" 2>&1)
-            if [ $? -ne 0 ]; then
-              echo "Failed to commit change for $FILE:"
-              echo "$API_RESPONSE"
-              exit 1
-            fi
-            echo "Successfully committed change for $FILE"
-          done < <(git ls-files -m -z)
+    # Use the REST API to commit changes, so we get automatic commit signing
+    - name: Commit and push changes
+      if: steps.changed-markdown-files.outputs.files != ''
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        # Github api only allows commits of one file at a time
+        BRANCH_NAME="${{ github.head_ref }}"
+        echo "Branch name: $BRANCH_NAME"
+        echo "Processing modified files..."
+        while IFS= read -r -d '' FILE; do
+          FILENAME=$(basename "$FILE")
+          echo "Processing file: $FILENAME"
+          CONTENT=$(base64 -i -w 0 "$FILE")
+          SHA=$(git rev-parse HEAD:"$FILE" 2>&1)
+          if [ $? -ne 0 ]; then
+            echo "Failed to get SHA for $FILE:"
+            echo "$SHA"
+            exit 1
+          fi
+          echo "SHA of file: $SHA"
+          API_RESPONSE=$(gh api --method PUT /repos/:owner/:repo/contents/"$FILE" \
+            --field message="chore(markdown): auto-fix markdown lint issues for $FILENAME" \
+            --field content="$CONTENT" \
+            --field branch="$BRANCH_NAME" \
+            --field sha="$SHA" 2>&1)
+          if [ $? -ne 0 ]; then
+            echo "Failed to commit change for $FILE:"
+            echo "$API_RESPONSE"
+            exit 1
+          fi
+          echo "Successfully committed change for $FILE"
+        done < <(git ls-files -m -z)
