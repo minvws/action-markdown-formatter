@@ -9,6 +9,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Check event is a pull request
+      if: ${{ github.event_name != 'pull_request' }}
+      run: |
+        echo "This action only runs on pull request events."
+        exit 1
+
     - name: Checkout code
       uses: actions/checkout@v5
       with:
