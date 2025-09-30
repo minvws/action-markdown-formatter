@@ -12,8 +12,9 @@ runs:
     - name: Check event is a pull request
       if: ${{ github.event_name != 'pull_request' }}
       run: |
-        echo "This action only runs on pull request events."
-        exit 1
+        echo "This action only runs on pull request events. Exiting."
+        gh run cancel ${{ github.run_id }}
+        gh run watch ${{ github.run_id }}
 
     - name: Checkout code
       uses: actions/checkout@v5
