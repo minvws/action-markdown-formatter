@@ -20,6 +20,9 @@ on:
 jobs:
   format-markdown:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: minvws/action-markdown-formatter@v1
         with:

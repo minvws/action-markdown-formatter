@@ -22,7 +22,7 @@ runs:
     - name: Get changed markdown files in the PR
       id: changed-markdown-files
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github_token }}
       run: |
         md_files=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.md$' | sed 's/.*/"&"/' | tr '\n' ' ' | sed 's/ $//' || true)
         echo "files=${md_files}" >> $GITHUB_OUTPUT
@@ -35,7 +35,7 @@ runs:
     - name: Commit and push changes
       if: steps.changed-markdown-files.outputs.files != ''
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github_token }}
         GH_REPO: ${{ github.repository }}
       run: |
         # Github api only allows commits of one file at a time
