@@ -11,6 +11,6 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: minvws/action-markdown-formatter@39baf8d0ba3d780107b8dbcaec197537b98b6065
+      - uses: minvws/action-markdown-formatter@7140c0fcd5b26e267e4744bb160c69bb0b9997e4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
