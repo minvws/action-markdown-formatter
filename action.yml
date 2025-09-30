@@ -9,27 +9,28 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Check event is a pull request
+    - name: Exit if not a pull request
       shell: bash
       if: ${{ github.event_name != 'pull_request' }}
       run: |
         echo "This action only runs on pull request events. Exiting."
-        gh run cancel ${{ github.run_id }}
-        gh run watch ${{ github.run_id }}
 
     - name: Checkout code
+      if: ${{ github.event_name == 'pull_request' }}
       uses: actions/checkout@v5
       with:
         ref: ${{ github.head_ref }}
 
     - name: Set up Node.js
+      if: ${{ github.event_name == 'pull_request' }}
       uses: actions/setup-node@v5
       with:
         node-version: "22"
 
     - name: Get changed markdown files in the PR
-      shell: bash
+      if: ${{ github.event_name == 'pull_request' }}
       id: changed-markdown-files
+      shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
       run: |
@@ -37,14 +38,14 @@ runs:
         echo "files=${md_files}" >> $GITHUB_OUTPUT
 
     - name: Format changed markdown files with Prettier
+      if: ${{ github.event_name == 'pull_request' && steps.changed-markdown-files.outputs.files != '' }}
       shell: bash
-      if: steps.changed-markdown-files.outputs.files != ''
       run: npx prettier --write ${{ steps.changed-markdown-files.outputs.files }}
 
     # Use the REST API to commit changes, so we get automatic commit signing
     - name: Commit and push changes
+      if: ${{ github.event_name == 'pull_request' && steps.changed-markdown-files.outputs.files != '' }}
       shell: bash
-      if: steps.changed-markdown-files.outputs.files != ''
       env:
         GH_TOKEN: ${{ inputs.github_token }}
         GH_REPO: ${{ github.repository }}
