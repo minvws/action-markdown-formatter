@@ -1,0 +1,16 @@
+name: Format Markdown
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: minvws/action-markdown-formatter@39baf8d0ba3d780107b8dbcaec197537b98b6065
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
