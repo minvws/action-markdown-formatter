@@ -34,7 +34,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github_token }}
       run: |
-        md_files=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.md$' | sed 's/.*/"&"/' | tr '\n' ' ' | sed 's/ $//' || true)
+        md_files=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.md$' | while read -r file; do [ -f "$file" ] && echo "$file"; done | sed 's/.*/"&"/' | tr '\n' ' ' | sed 's/ $//' || true)
         echo "files=${md_files}" >> $GITHUB_OUTPUT
 
     - name: Format changed markdown files with Prettier
