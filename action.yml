@@ -40,7 +40,7 @@ runs:
     - name: Format changed markdown files with Prettier
       if: ${{ github.event_name == 'pull_request' && steps.changed-markdown-files.outputs.files != '' }}
       shell: bash
-      run: npx prettier --write ${{ steps.changed-markdown-files.outputs.files }}
+      run: npx prettier@3.6.2 --write ${{ steps.changed-markdown-files.outputs.files }}
 
     # Use the REST API to commit changes, so we get automatic commit signing
     - name: Commit and push changes
