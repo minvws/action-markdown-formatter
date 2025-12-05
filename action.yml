@@ -76,4 +76,6 @@ runs:
             exit 1
           fi
           echo "Successfully committed change for $FILE"
+          echo "Waiting 2s before processing the next file..."
+          sleep 2
         done < <(git ls-files -m -z)
