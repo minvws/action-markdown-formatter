@@ -11,6 +11,6 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: minvws/action-markdown-formatter@v1
+      - uses: minvws/action-markdown-formatter@v1.0.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
